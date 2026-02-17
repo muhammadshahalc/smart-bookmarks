@@ -8,15 +8,18 @@ import { headers } from 'next/headers'
 
 export async function signInWithGoogle() {
   const supabase = await createClient()
+  const headerList = await headers()
   
-  // We need to know where the app is running (localhost or Vercel)
-  const origin = (await headers()).get('origin')
+  // Vercel usually provides the 'host' header. 
+  // We construct the URL to ensure it matches your deployment exactly.
+  const host = headerList.get('host')
+  const protocol = host?.includes('localhost') ? 'http' : 'https'
+  const redirectUrl = `${protocol}://${host}/auth/callback`
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      // This tells Google where to send the user after they log in
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: redirectUrl,
     },
   })
 
@@ -25,7 +28,6 @@ export async function signInWithGoogle() {
     return redirect('/login?error=auth-failed')
   }
 
-  // Redirect the user to the Google Login screen
   if (data.url) {
     redirect(data.url)
   }
