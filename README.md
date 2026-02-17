@@ -4,7 +4,8 @@ A high-performance, real-time bookmark management system built with **Next.js 16
 
 ## 🌐 Vercel Live Demo
 
-**Production URL**: [https://smart-bookmarks-roan.vercel.app/]()
+**Live Application:** https://smart-bookmarks-roan.vercel.app/
+
 
 ---
 
