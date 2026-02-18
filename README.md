@@ -9,26 +9,6 @@ A high-performance, real-time bookmark management system built with **Next.js 16
 **Live Application:** https://smart-bookmarks-roan.vercel.app/
 
 
----
-
-## ⚡ Technical Challenges & Solutions
-
-### Multi-Tab Concurrent Synchronization
-
-**The Challenge:**
-During implementation, I encountered a race condition where data updates were not propagating to other open tabs. While `DELETE` operations broadcasted correctly, `INSERT` operations failed to sync. This was a security conflict between **Postgres Logical Replication** and **Row Level Security (RLS)**.
-
-**The Diagnosis:**
-Supabase Realtime respects RLS. By default, Postgres replication sends a minimal payload (Primary Key only). My security policy (`auth.uid() = user_id`) required the `user_id` column to verify ownership. Because the payload lacked this column, the Realtime engine could not validate permission and silently dropped the event.
-
-**The Solution:**
-I optimized the database configuration by enforcing **`REPLICA IDENTITY FULL`** on the bookmarks table.
-
-* **Database Optimization**: Executed `ALTER TABLE bookmarks REPLICA IDENTITY FULL;`. This forces the Postgres Write Ahead Log (WAL) to include the **entire row payload** in the replication stream.
-* **Result**: The `user_id` became available during the broadcast phase, allowing the Realtime security check to pass. This enabled seamless, zero-refresh synchronization across all active windows.
-
----
-
 ## 🏗️ System Architecture
 
 The application utilizes a **Subscriber/Publisher** model for data synchronization:
@@ -60,6 +40,25 @@ The application utilizes a **Subscriber/Publisher** model for data synchronizati
 * **Optimistic UI**: Instant local updates for a "zero-latency" user experience.
 * **Hardened Security**: PostgreSQL RLS ensures users only access their own data.
 * **Responsive UI**: Modern, mobile-first design built with Tailwind CSS.
+
+
+---
+
+## ⚡ Technical Challenges & Solutions
+
+### Multi-Tab Concurrent Synchronization
+
+**The Challenge:**
+During implementation, I encountered a race condition where data updates were not propagating to other open tabs. While `DELETE` operations broadcasted correctly, `INSERT` operations failed to sync. This was a security conflict between **Postgres Logical Replication** and **Row Level Security (RLS)**.
+
+**The Diagnosis:**
+Supabase Realtime respects RLS. By default, Postgres replication sends a minimal payload (Primary Key only). My security policy (`auth.uid() = user_id`) required the `user_id` column to verify ownership. Because the payload lacked this column, the Realtime engine could not validate permission and silently dropped the event.
+
+**The Solution:**
+I optimized the database configuration by enforcing **`REPLICA IDENTITY FULL`** on the bookmarks table.
+
+* **Database Optimization**: Executed `ALTER TABLE bookmarks REPLICA IDENTITY FULL;`. This forces the Postgres Write Ahead Log (WAL) to include the **entire row payload** in the replication stream.
+* **Result**: The `user_id` became available during the broadcast phase, allowing the Realtime security check to pass. This enabled seamless, zero-refresh synchronization across all active windows.
 
 ---
 
