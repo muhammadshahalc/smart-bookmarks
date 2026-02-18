@@ -1,5 +1,3 @@
-// src/components/BookmarkForm.tsx
-
 'use client'
 
 import { useState } from 'react'
