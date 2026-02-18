@@ -46,19 +46,22 @@ The application utilizes a **Subscriber/Publisher** model for data synchronizati
 
 ## ⚡ Technical Challenges & Solutions
 
-### Multi-Tab Concurrent Synchronization
+### Real-Time State Synchronization across Concurrent Sessions
 
 **The Challenge:**
-During implementation, I encountered a race condition where data updates were not propagating to other open tabs. While `DELETE` operations broadcasted correctly, `INSERT` operations failed to sync. This was a security conflict between **Postgres Logical Replication** and **Row Level Security (RLS)**.
+During the architectural implementation, a significant challenge arose regarding data propagation across multiple browser tabs. While `DELETE` operations synchronized correctly, `INSERT` events were occasionally failing to trigger UI updates in real-time. This surfaced a complex conflict between **Postgres Logical Replication** and **Row Level Security (RLS)** protocols.
 
 **The Diagnosis:**
-Supabase Realtime respects RLS. By default, Postgres replication sends a minimal payload (Primary Key only). My security policy (`auth.uid() = user_id`) required the `user_id` column to verify ownership. Because the payload lacked this column, the Realtime engine could not validate permission and silently dropped the event.
+We identified that Supabase Realtime strictly adheres to RLS policies for security. By default, Postgres replication sends a minimal payload (often just the Primary Key). However, our security policy (`auth.uid() = user_id`) requires the `user_id` column to verify ownership before broadcasting. Because the initial replication payload lacked this specific column, the Realtime engine could not validate permissions and was forced to silently drop the events to maintain data privacy.
 
 **The Solution:**
-I optimized the database configuration by enforcing **`REPLICA IDENTITY FULL`** on the bookmarks table.
+To resolve this, we optimized the database configuration to ensure the security layer had the necessary data to validate requests without compromising performance:
 
-* **Database Optimization**: Executed `ALTER TABLE bookmarks REPLICA IDENTITY FULL;`. This forces the Postgres Write Ahead Log (WAL) to include the **entire row payload** in the replication stream.
-* **Result**: The `user_id` became available during the broadcast phase, allowing the Realtime security check to pass. This enabled seamless, zero-refresh synchronization across all active windows.
+* **Database Optimization**: We moved beyond the default configuration by enforcing **`REPLICA IDENTITY FULL`** on the bookmarks table using:
+
+
+* **Engineering Impact**: This adjustment forces the Postgres Write-Ahead Log (WAL) to include the **entire row payload** in every replication stream.
+* **Result**: By ensuring the `user_id` was present in the broadcast phase, we enabled the Realtime security engine to verify ownership instantly. This successfully achieved seamless, zero-refresh synchronization across all active concurrent windows, providing a robust and reactive user experience.
 
 ---
 
