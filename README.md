@@ -4,10 +4,6 @@
 
 A high-performance, real-time bookmark management system built with **Next.js 16** and **Supabase**. This application features instant data synchronization across multiple devices and tabs, secure Row Level Security (RLS), and a responsive, modern UI.
 
-## 🌐 Vercel Live Demo
-
-**Live Application:** https://smart-bookmarks-roan.vercel.app/
-
 
 ## 🏗️ System Architecture
 
